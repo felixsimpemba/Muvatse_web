@@ -2,7 +2,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
 const API     = import.meta.env.VITE_API_URL || 'http://localhost:8001/api'
-const STORAGE = API.replace('/api', '/storage')
+const STORAGE = API.replace(/\/api$/, '/storage')
 
 async function get(path, fallback) {
   try {
