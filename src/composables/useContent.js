@@ -13,6 +13,11 @@ async function get(path, fallback) {
   }
 }
 
+export async function submitContact(payload) {
+  const res = await axios.post(API + '/contact', payload)
+  return res.data
+}
+
 export function storageUrl(path) {
   if (!path) return null
   return path.startsWith('http') ? path : `${STORAGE}/${path}`
