@@ -18,7 +18,7 @@ export const PROJECT_IMAGES = {
 
   // Team images still in root
   // we can move them to a team folder later if needed 
-  // another option is to keep them in the root for easy access
+  // another option is to keep them in the root for easy access 
   TEAM_DIRECTOR: 'director.png',
   TEAM_CFO: 'cfo.png',
   TEAM_COO: 'COO.png',
