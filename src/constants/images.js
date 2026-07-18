@@ -17,6 +17,8 @@ export const PROJECT_IMAGES = {
   SUBSTATION_GRID1: 'our_work/33_11kV substation.jpeg',
 
   // Team images still in root
+  // we can move them to a team folder later if needed 
+  // another option is to keep them in the root for easy access 
   TEAM_DIRECTOR: 'director.png',
   TEAM_CFO: 'cfo.png',
   TEAM_COO: 'COO.png',

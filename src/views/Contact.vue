@@ -66,14 +66,57 @@
         </div>
       </div>
     </section>
+
+    <!-- SEND MESSAGE -->
+    <section class="section container">
+      <div class="form-card reveal">
+        <SectionHeader label="Send a Message" title="Have a Project in Mind?"
+          subtitle="Fill out the form below and our team will get back to you shortly." />
+
+        <form class="contact-form" @submit.prevent="submit">
+          <div class="form-row">
+            <div class="form-field">
+              <label for="name">Name *</label>
+              <input id="name" v-model="form.name" type="text" required maxlength="100" />
+            </div>
+            <div class="form-field">
+              <label for="email">Email *</label>
+              <input id="email" v-model="form.email" type="email" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="phone">Phone</label>
+              <input id="phone" v-model="form.phone" type="tel" maxlength="30" />
+            </div>
+            <div class="form-field">
+              <label for="subject">Subject</label>
+              <input id="subject" v-model="form.subject" type="text" maxlength="255" />
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="message">Message *</label>
+            <textarea id="message" v-model="form.message" rows="5" required></textarea>
+          </div>
+
+          <p v-if="status === 'success'" class="form-status form-status--success">Message sent — we'll get back to you shortly.</p>
+          <p v-if="status === 'error'" class="form-status form-status--error">{{ errorMsg }}</p>
+
+          <button type="submit" class="btn btn-primary btn-lg" :disabled="sending">
+            {{ sending ? 'Sending…' : 'Send Message' }}
+          </button>
+        </form>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { MapPin, Phone, Mail } from 'lucide-vue-next'
 import SectionHeader from '../components/SectionHeader.vue'
 import { useReveal } from '../composables/useReveal'
-import { useCompany, usePageContent } from '../composables/useContent'
+import { useCompany, usePageContent, submitContact } from '../composables/useContent'
 
 useReveal()
 const { company } = useCompany()
@@ -82,6 +125,26 @@ const { content } = usePageContent('contact', {
   hero: { label: 'Get in Touch', title: 'Connect with Our Team',
           subtitle: 'Visit our head office in Lusaka or reach out via phone and email.' },
 })
+
+const form = ref({ name: '', email: '', phone: '', subject: '', message: '' })
+const sending  = ref(false)
+const status   = ref(null)
+const errorMsg = ref('')
+
+async function submit() {
+  sending.value = true
+  status.value  = null
+  try {
+    await submitContact(form.value)
+    status.value = 'success'
+    form.value   = { name: '', email: '', phone: '', subject: '', message: '' }
+  } catch (e) {
+    status.value  = 'error'
+    errorMsg.value = e.response?.data?.message || 'Something went wrong. Please try again.'
+  } finally {
+    sending.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -167,5 +230,82 @@ const { content } = usePageContent('contact', {
   .map-container {
     height: 350px;
   }
+}
+
+.form-card {
+  background: white;
+  padding: 48px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+}
+
+@media (max-width: 768px) {
+  .form-card {
+    padding: 28px 20px;
+  }
+}
+
+.contact-form {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-brand-700);
+}
+
+.form-field input,
+.form-field textarea {
+  font: inherit;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--color-brand-50);
+  color: var(--color-brand-900);
+  transition: var(--transition-smooth);
+  resize: vertical;
+}
+
+.form-field input:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  background: white;
+}
+
+.form-status {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.form-status--success { color: #16a34a; }
+.form-status--error   { color: #dc2626; }
+
+.contact-form .btn {
+  align-self: flex-start;
 }
 </style>

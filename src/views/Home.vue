@@ -137,6 +137,69 @@
       </div>
     </section>
 
+    <!-- ======= CURRENT PROJECTS ======= -->
+    <section v-if="currentProjects.length" class="section">
+      <div class="container">
+        <SectionHeader label="Live Now" title="Current Projects"
+          subtitle="A look at what our teams are actively delivering across Zambia right now." centered />
+
+        <div class="current-projects-grid reveal">
+          <div v-for="proj in currentProjects" :key="proj.id" class="cp-card" @click="openDetail(proj)">
+            <div class="cp-visual">
+              <img v-if="activeImage(proj)" :src="activeImage(proj)" :alt="proj.title" class="cp-img" />
+              <div v-else class="cp-img-empty"></div>
+              <span v-if="proj.status" class="cp-status-badge">{{ proj.status }}</span>
+
+              <template v-if="proj.images.length > 1">
+                <button class="cp-nav prev" @click.stop="prevImage(proj)" aria-label="Previous image">
+                  <ChevronLeft :size="18" />
+                </button>
+                <button class="cp-nav next" @click.stop="nextImage(proj)" aria-label="Next image">
+                  <ChevronRight :size="18" />
+                </button>
+                <div class="cp-dots">
+                  <span v-for="(img, i) in proj.images" :key="img.id" class="cp-dot"
+                    :class="{ active: i === (cpIndex[proj.id] || 0) }"></span>
+                </div>
+              </template>
+            </div>
+            <div class="cp-body">
+              <h3>{{ proj.title }}</h3>
+              <p v-if="proj.description">{{ proj.description }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= CURRENT PROJECT DETAIL LIGHTBOX ======= -->
+    <Transition name="fade">
+      <div v-if="selectedProject" class="cp-lightbox" @click="closeDetail">
+        <button class="cp-lightbox-close" @click.stop="closeDetail" aria-label="Close">
+          <X :size="28" />
+        </button>
+        <template v-if="selectedProject.images.length > 1">
+          <button class="cp-lightbox-nav prev" @click.stop="prevImage(selectedProject)" aria-label="Previous image">
+            <ChevronLeft :size="40" />
+          </button>
+          <button class="cp-lightbox-nav next" @click.stop="nextImage(selectedProject)" aria-label="Next image">
+            <ChevronRight :size="40" />
+          </button>
+        </template>
+        <div class="cp-lightbox-content" @click.stop>
+          <img v-if="activeImage(selectedProject)" :src="activeImage(selectedProject)" :alt="selectedProject.title" class="cp-lightbox-img" />
+          <div class="cp-lightbox-info">
+            <span v-if="selectedProject.status" class="cp-lightbox-status">{{ selectedProject.status }}</span>
+            <h2 class="cp-lightbox-title">{{ selectedProject.title }}</h2>
+            <p v-if="selectedProject.description" class="cp-lightbox-desc">{{ selectedProject.description }}</p>
+            <p v-if="selectedProject.images.length > 1" class="cp-lightbox-counter">
+              {{ (cpIndex[selectedProject.id] || 0) + 1 }} / {{ selectedProject.images.length }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- ======= SERVICES: THE MODERN GRID ======= -->
     <section class="section">
       <div class="container">
@@ -197,13 +260,13 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { Power, UtilityPole, Sun, Bolt, Briefcase, Truck, Wrench, Cable, DraftingCompass, TowerControl, ArrowRight } from 'lucide-vue-next'
+import { computed, reactive, ref, onUnmounted } from 'vue'
+import { Power, UtilityPole, Sun, Bolt, Briefcase, Truck, Wrench, Cable, DraftingCompass, TowerControl, ArrowRight, ChevronLeft, ChevronRight, X } from 'lucide-vue-next'
 import SectionHeader from '../components/SectionHeader.vue'
 import { PROJECT_IMAGES, getImageUrl } from '../constants/images'
 import { useReveal } from '../composables/useReveal'
 import {
-  useCompany, useHero, useStats, useTimeline, useServices, usePortfolio, useTestimonials,
+  useCompany, useHero, useStats, useTimeline, useServices, usePortfolio, useCurrentProjects, useTestimonials,
   usePageContent, useListItems,
 } from '../composables/useContent'
 
@@ -218,6 +281,7 @@ const { stats: heroStats }          = useStats()
 const { timeline: timelineRaw }     = useTimeline()
 const { services: servicesRaw }     = useServices()
 const { portfolio: portfolioRaw }   = usePortfolio()
+const { currentProjects }           = useCurrentProjects()
 const { testimonials: testimonialList } = useTestimonials()
 
 const { content } = usePageContent('home', {
@@ -271,6 +335,42 @@ const filteredServices = computed(() =>
 const bentoItems = computed(() =>
   portfolioRaw.value.filter(p => p.image_url).slice(0, 4)
 )
+
+const cpIndex = reactive({})
+
+function activeImage(proj) {
+  return proj.images[cpIndex[proj.id] || 0]?.image_url || null
+}
+function nextImage(proj) {
+  const len = proj.images.length
+  if (!len) return
+  cpIndex[proj.id] = ((cpIndex[proj.id] || 0) + 1) % len
+}
+function prevImage(proj) {
+  const len = proj.images.length
+  if (!len) return
+  cpIndex[proj.id] = ((cpIndex[proj.id] || 0) - 1 + len) % len
+}
+
+const selectedProject = ref(null)
+
+function openDetail(proj) {
+  selectedProject.value = proj
+  document.body.style.overflow = 'hidden'
+  window.addEventListener('keydown', handleCpKeydown)
+}
+function closeDetail() {
+  selectedProject.value = null
+  document.body.style.overflow = ''
+  window.removeEventListener('keydown', handleCpKeydown)
+}
+function handleCpKeydown(e) {
+  if (!selectedProject.value) return
+  if (e.key === 'Escape') closeDetail()
+  if (e.key === 'ArrowRight') nextImage(selectedProject.value)
+  if (e.key === 'ArrowLeft') prevImage(selectedProject.value)
+}
+onUnmounted(() => window.removeEventListener('keydown', handleCpKeydown))
 
 const featuredTestimonial = computed(() => testimonialList.value[0] || null)
 
@@ -598,6 +698,261 @@ const missionFeatures = computed(() =>
 .bento-footer {
   margin-top: 48px;
   text-align: center;
+}
+
+/* ---------- Current Projects ---------- */
+.current-projects-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 48px;
+}
+
+.cp-card {
+  flex: 1 1 320px;
+  max-width: 380px;
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.cp-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-md);
+}
+
+.cp-visual {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--color-brand-50);
+}
+
+.cp-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cp-img-empty {
+  width: 100%;
+  height: 100%;
+  background: var(--color-brand-100);
+}
+
+.cp-status-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: var(--color-accent);
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+}
+
+.cp-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(15, 23, 42, 0.5);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.cp-card:hover .cp-nav {
+  opacity: 1;
+}
+
+.cp-nav.prev { left: 12px; }
+.cp-nav.next { right: 12px; }
+
+.cp-dots {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cp-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.cp-dot.active {
+  background: white;
+}
+
+.cp-body {
+  padding: 24px;
+}
+
+.cp-body h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.cp-body p {
+  font-size: 14px;
+  color: var(--color-brand-500);
+  line-height: 1.6;
+}
+
+/* ---------- Current Project Lightbox ---------- */
+.cp-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.cp-lightbox-close {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.cp-lightbox-close:hover {
+  opacity: 1;
+}
+
+.cp-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.cp-lightbox-nav:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.cp-lightbox-nav.prev { left: 40px; }
+.cp-lightbox-nav.next { right: 40px; }
+
+.cp-lightbox-content {
+  max-width: 900px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+}
+
+.cp-lightbox-img {
+  max-height: 60vh;
+  width: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.cp-lightbox-info {
+  text-align: center;
+  color: white;
+}
+
+.cp-lightbox-status {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--color-accent);
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+
+.cp-lightbox-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.cp-lightbox-desc {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.75);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.cp-lightbox-counter {
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 768px) {
+  .cp-lightbox-nav {
+    width: 48px;
+    height: 48px;
+  }
+
+  .cp-lightbox-nav.prev { left: 10px; }
+  .cp-lightbox-nav.next { right: 10px; }
+
+  .cp-lightbox-title {
+    font-size: 18px;
+  }
 }
 
 /* ---------- Modern Services ---------- */

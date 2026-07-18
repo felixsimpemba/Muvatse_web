@@ -2,7 +2,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
 const API     = import.meta.env.VITE_API_URL || 'http://localhost:8001/api'
-const STORAGE = API.replace('/api', '/storage')
+const STORAGE = API.replace(/\/api$/, '/storage')
 
 async function get(path, fallback) {
   try {
@@ -11,6 +11,11 @@ async function get(path, fallback) {
   } catch {
     return fallback
   }
+}
+
+export async function submitContact(payload) {
+  const res = await axios.post(API + '/contact', payload)
+  return res.data
 }
 
 export function storageUrl(path) {
@@ -70,6 +75,23 @@ export function usePortfolio() {
     }))
   })
   return { portfolio }
+}
+
+export function useCurrentProjects() {
+  const currentProjects = ref([])
+  onMounted(async () => {
+    const items = await get('/current-projects', [])
+    currentProjects.value = items.map(p => ({
+      ...p,
+      images: (p.images || []).map(img => ({
+        ...img,
+        image_url: img.image_path
+          ? (img.image_path.startsWith('http') ? img.image_path : `${STORAGE}/${img.image_path}`)
+          : null
+      }))
+    }))
+  })
+  return { currentProjects }
 }
 
 export function useTeam() {
