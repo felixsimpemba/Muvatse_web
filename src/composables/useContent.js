@@ -77,6 +77,23 @@ export function usePortfolio() {
   return { portfolio }
 }
 
+export function useCurrentProjects() {
+  const currentProjects = ref([])
+  onMounted(async () => {
+    const items = await get('/current-projects', [])
+    currentProjects.value = items.map(p => ({
+      ...p,
+      images: (p.images || []).map(img => ({
+        ...img,
+        image_url: img.image_path
+          ? (img.image_path.startsWith('http') ? img.image_path : `${STORAGE}/${img.image_path}`)
+          : null
+      }))
+    }))
+  })
+  return { currentProjects }
+}
+
 export function useTeam() {
   const team = ref([])
   onMounted(async () => {
